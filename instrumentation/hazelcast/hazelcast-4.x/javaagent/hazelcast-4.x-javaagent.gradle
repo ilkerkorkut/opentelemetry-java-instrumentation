@@ -1,0 +1,19 @@
+apply from: "$rootDir/gradle/instrumentation.gradle"
+
+muzzle {
+  pass {
+    group = "com.hazelcast"
+    module = "hazelcast"
+    versions = "[4.0,)"
+  }
+  fail {
+    group = "com.hazelcast"
+    module = "hazelcast"
+    versions = "[,4.0)"
+  }
+}
+
+
+dependencies {
+  library group: 'com.hazelcast', name: 'hazelcast-all', version: '4.1.1'
+}
