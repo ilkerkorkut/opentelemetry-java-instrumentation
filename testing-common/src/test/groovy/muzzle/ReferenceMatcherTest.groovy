@@ -5,27 +5,22 @@
 
 package muzzle
 
-import static io.opentelemetry.javaagent.tooling.muzzle.Reference.Flag.ManifestationFlag.ABSTRACT
-import static io.opentelemetry.javaagent.tooling.muzzle.Reference.Flag.ManifestationFlag.INTERFACE
-import static io.opentelemetry.javaagent.tooling.muzzle.Reference.Flag.ManifestationFlag.NON_INTERFACE
-import static io.opentelemetry.javaagent.tooling.muzzle.Reference.Flag.MinimumVisibilityFlag.PRIVATE_OR_HIGHER
-import static io.opentelemetry.javaagent.tooling.muzzle.Reference.Flag.MinimumVisibilityFlag.PROTECTED_OR_HIGHER
-import static io.opentelemetry.javaagent.tooling.muzzle.Reference.Flag.OwnershipFlag.NON_STATIC
-import static io.opentelemetry.javaagent.tooling.muzzle.Reference.Flag.OwnershipFlag.STATIC
-import static io.opentelemetry.javaagent.tooling.muzzle.matcher.Mismatch.MissingClass
-import static io.opentelemetry.javaagent.tooling.muzzle.matcher.Mismatch.MissingField
-import static io.opentelemetry.javaagent.tooling.muzzle.matcher.Mismatch.MissingFlag
-import static io.opentelemetry.javaagent.tooling.muzzle.matcher.Mismatch.MissingMethod
+import static io.opentelemetry.javaagent.tooling.muzzle.matcher.Mismatch.*
+import static io.opentelemetry.javaagent.extension.muzzle.Reference.Flag.ManifestationFlag.*
+import static io.opentelemetry.javaagent.extension.muzzle.Reference.Flag.MinimumVisibilityFlag.PRIVATE_OR_HIGHER
+import static io.opentelemetry.javaagent.extension.muzzle.Reference.Flag.MinimumVisibilityFlag.PROTECTED_OR_HIGHER
+import static io.opentelemetry.javaagent.extension.muzzle.Reference.Flag.OwnershipFlag.NON_STATIC
+import static io.opentelemetry.javaagent.extension.muzzle.Reference.Flag.OwnershipFlag.STATIC
 import static muzzle.TestClasses.MethodBodyAdvice
 
 import external.LibraryBaseClass
 import io.opentelemetry.instrumentation.TestHelperClasses
 import io.opentelemetry.instrumentation.test.utils.ClasspathUtils
-import io.opentelemetry.javaagent.tooling.muzzle.Reference
-import io.opentelemetry.javaagent.tooling.muzzle.Reference.Source
-import io.opentelemetry.javaagent.tooling.muzzle.collector.ReferenceCollector
 import io.opentelemetry.javaagent.tooling.muzzle.matcher.Mismatch
+import io.opentelemetry.javaagent.extension.muzzle.Reference
+import io.opentelemetry.javaagent.extension.muzzle.Reference.Source
 import io.opentelemetry.javaagent.tooling.muzzle.matcher.ReferenceMatcher
+import io.opentelemetry.javaagent.tooling.muzzle.collector.ReferenceCollector
 import net.bytebuddy.jar.asm.Type
 import spock.lang.Shared
 import spock.lang.Specification
@@ -165,20 +160,6 @@ class ReferenceMatcherTest extends Specification {
     "privateField"   | "Ljava/lang/Object;"                             | [PROTECTED_OR_HIGHER]         | MethodBodyAdvice.A2 | [MissingFlag]      | "mismatch private field in supertype"
     "protectedField" | "Ljava/lang/Object;"                             | [STATIC]                      | MethodBodyAdvice.A  | [MissingFlag]      | "mismatch static field"
     "staticB"        | Type.getType(MethodBodyAdvice.B).getDescriptor() | [STATIC, PROTECTED_OR_HIGHER] | MethodBodyAdvice.A  | []                 | "match static field"
-  }
-
-  def "should ignore helper classes from third-party packages"() {
-    given:
-    def emptyClassLoader = new URLClassLoader(new URL[0], (ClassLoader) null)
-    def reference = new Reference.Builder("com.google.common.base.Strings")
-      .build()
-
-    when:
-    def mismatches = createMatcher([reference], [reference.className])
-      .getMismatchedReferenceSources(emptyClassLoader)
-
-    then:
-    mismatches.empty
   }
 
   def "should not check abstract #desc helper classes"() {
