@@ -279,6 +279,8 @@ include ':instrumentation:wicket-8.0:javaagent'
 include ':instrumentation:rocketmq-client-4.8:javaagent'
 include ':instrumentation:rocketmq-client-4.8:library'
 include ':instrumentation:rocketmq-client-4.8:testing'
+include ':instrumentation:hazelcast:hazelcast-4'
+include ':instrumentation:hazelcast:hazelcast-4:javaagent'
 
 // benchmark
 include ':benchmark'
