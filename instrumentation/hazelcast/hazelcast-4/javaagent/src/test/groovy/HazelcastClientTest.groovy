@@ -38,9 +38,7 @@ class HazelcastClientTest extends AgentInstrumentationSpecification {
     when:
     IMap<Integer, Integer> map = hazelcastClient.getMap("foo")
     map.put(3,5)
-    println("!!!!!!!!!")
     println(map.get(3))
-    println(getTraces())
     then:
     println(getTraces())
   }

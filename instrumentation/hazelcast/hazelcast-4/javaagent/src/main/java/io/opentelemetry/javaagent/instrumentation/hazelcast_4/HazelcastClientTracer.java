@@ -1,7 +1,7 @@
 package io.opentelemetry.javaagent.instrumentation.hazelcast_4;
 
 import com.hazelcast.client.impl.protocol.ClientMessage;
-import com.hazelcast.client.impl.spi.ClientProxy;
+import com.hazelcast.client.impl.spi.impl.ClientInvocation;
 import com.hazelcast.internal.nio.Connection;
 import io.opentelemetry.instrumentation.api.tracer.DatabaseClientTracer;
 import io.opentelemetry.instrumentation.api.tracer.net.NetPeerAttributes;
@@ -19,13 +19,13 @@ public class HazelcastClientTracer extends
   }
 
   public static HazelcastClientTracer tracer() {
-    System.out.println("==== TRACER");
     return TRACER;
   }
 
   @Override
   protected String spanName(
-      Connection connection, HazelcastClientTracer.ClientOperation clientOperation, String sanitizedStatement) {
+      Connection connection, HazelcastClientTracer.ClientOperation clientOperation,
+      String sanitizedStatement) {
     return clientOperation.getClientMessage().getOperationName();
   }
 
@@ -36,19 +36,24 @@ public class HazelcastClientTracer extends
 
   @Override
   protected String dbSystem(Connection clientConnection) {
-    return clientConnection.toString();
+    return clientConnection != null ? clientConnection.toString() : "";
   }
 
   @Override
   protected String dbStatement(
-      Connection connection, HazelcastClientTracer.ClientOperation clientOperation, String sanitizedStatement) {
+      Connection connection, HazelcastClientTracer.ClientOperation clientOperation,
+      String sanitizedStatement) {
     return sanitizedStatement;
   }
 
   @Override
   protected InetSocketAddress peerAddress(Connection connection) {
     try {
-      return connection.getRemoteAddress().getInetSocketAddress();
+      if (connection != null && connection.getRemoteAddress() != null) {
+        return connection.getRemoteAddress().getInetSocketAddress();
+      } else {
+        return null;
+      }
     } catch (UnknownHostException e) {
       return null;
     }
@@ -61,24 +66,32 @@ public class HazelcastClientTracer extends
 
   public static final class ClientOperation {
     private final ClientMessage clientMessage;
-    private final ClientProxy clientProxy;
+    private final ClientInvocation clientInvocation;
+    private final Object objectName;
 
-    public ClientOperation(ClientMessage clientMessage, ClientProxy clientProxy) {
+    public ClientOperation(ClientMessage clientMessage, ClientInvocation clientInvocation,
+        Object objectName) {
       this.clientMessage = clientMessage;
-      this.clientProxy = clientProxy;
+      this.clientInvocation = clientInvocation;
+      this.objectName = objectName;
     }
 
     public ClientMessage getClientMessage() {
       return clientMessage;
     }
 
-    public ClientProxy getClientProxy() {
-      return clientProxy;
+    public ClientInvocation getClientInvocation() {
+      return clientInvocation;
+    }
+
+    public Object getObjectName() {
+      return objectName;
     }
 
     private String getStringOperation() {
-      if (clientMessage != null && clientProxy != null) {
-        return "ServiceName: " +clientProxy.getServiceName() + " operationName: " + clientMessage.getOperationName() + " distributedObjectName: "+clientProxy.getName();
+      if (clientMessage != null && clientInvocation != null) {
+        return "Operation Name: " + clientMessage.getOperationName() + " Distributed Object Name: "
+            + this.getObjectName() + " Correlation Id: " + clientMessage.getCorrelationId();
       } else {
         return new String(new byte[] {}, StandardCharsets.UTF_8);
       }
@@ -88,7 +101,7 @@ public class HazelcastClientTracer extends
     public String toString() {
       return "ClientOperation{" +
           "clientMessage=" + clientMessage +
-          ", clientProxy=" + clientProxy +
+          ", objectName=" + objectName +
           '}';
     }
   }
